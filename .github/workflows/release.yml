@@ -10,15 +10,8 @@ env:
 
 jobs:
   build-artifacts:
-    name: Build Release Artifacts (${{ matrix.runner }})
-    strategy:
-      matrix:
-        include:
-          - runner: ubuntu-latest
-            artifact_name: ghost-resend-mailer-x86_64-linux
-          - runner: ubuntu-latest-arm64
-            artifact_name: ghost-resend-mailer-aarch64-linux
-    runs-on: ${{ matrix.runner }}
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
     
     steps:
       - uses: actions/checkout@v4
@@ -40,7 +33,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: target/release/ghost-resend-mailer
-          name: ${{ matrix.artifact_name }}
+          asset_name: ghost-resend-mailer-x86_64-linux
 
   build-and-push-image:
     name: Push Docker image
@@ -51,9 +44,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -78,7 +68,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -103,13 +93,8 @@ jobs:
             
             Pull the container with:
             ```bash
-            # For AMD64/x86_64
-            docker pull ${{ steps.image-info.outputs.image }}
-            
-            # For ARM64
             docker pull ${{ steps.image-info.outputs.image }}
             ```
             
             Available platforms:
             - linux/amd64
-            - linux/arm64 

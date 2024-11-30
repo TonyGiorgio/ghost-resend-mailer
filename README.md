@@ -58,7 +58,7 @@ docker pull ghcr.io/tonygiorgio/ghost-resend-mailer:latest
 docker pull ghcr.io/tonygiorgio/ghost-resend-mailer:v0.1.0
 ```
 
-The container supports both AMD64 (x86_64) and ARM64 architectures. Docker will automatically pull the correct version for your system.
+The container is built for x86_64 (AMD64) architecture. Docker will automatically pull the correct version for your system.
 
 Run the container:
 ```bash

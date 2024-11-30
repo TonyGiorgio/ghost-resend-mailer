@@ -49,16 +49,9 @@ jobs:
         run: cargo clippy --all-targets
 
   build:
-    name: Build Release (${{ matrix.runner }})
+    name: Build Release
+    runs-on: ubuntu-latest
     needs: test-and-lint
-    strategy:
-      matrix:
-        include:
-          - runner: ubuntu-latest
-            artifact_name: ghost-resend-mailer-x86_64-linux
-          - runner: ubuntu-latest-arm64
-            artifact_name: ghost-resend-mailer-aarch64-linux
-    runs-on: ${{ matrix.runner }}
     
     steps:
       - uses: actions/checkout@v4
@@ -79,6 +72,6 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
+          name: ghost-resend-mailer-x86_64-linux
           path: target/release/ghost-resend-mailer
           retention-days: 7
