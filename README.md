@@ -46,23 +46,22 @@ cargo run
 
 ## Deployment
 
-### Using Docker Compose
+### Using Docker
+
+You can pull the pre-built container from GitHub Container Registry:
 
 ```bash
-docker compose up -d \
-  -e GHOST_URL=http://your-ghost-blog.com \
-  -e GHOST_ADMIN_ID=your_admin_id \
-  -e GHOST_ADMIN_SECRET=your_admin_secret \
-  -e WEBHOOK_SECRET=your_webhook_secret \
-  -e RESEND_API_KEY=your_resend_api_key \
-  -e FROM_EMAIL=your-blog@yourdomain.com
+# Pull the latest version
+docker pull ghcr.io/tonygiorgio/ghost-resend-mailer:latest
+
+# Or pull a specific version
+docker pull ghcr.io/tonygiorgio/ghost-resend-mailer:v0.1.0
 ```
 
-### Using Docker Directly
+The container supports both AMD64 (x86_64) and ARM64 architectures. Docker will automatically pull the correct version for your system.
 
+Run the container:
 ```bash
-docker build -t ghost-resend-mailer .
-
 docker run -d \
   -p 3000:3000 \
   -e GHOST_URL=http://your-ghost-blog.com \
@@ -71,7 +70,34 @@ docker run -d \
   -e WEBHOOK_SECRET=your_webhook_secret \
   -e RESEND_API_KEY=your_resend_api_key \
   -e FROM_EMAIL=your-blog@yourdomain.com \
-  ghost-resend-mailer
+  ghcr.io/tonygiorgio/ghost-resend-mailer:latest
+```
+
+### Using Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  mailer:
+    image: ghcr.io/tonygiorgio/ghost-resend-mailer:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GHOST_URL=${GHOST_URL:?GHOST_URL is required}
+      - GHOST_ADMIN_ID=${GHOST_ADMIN_ID:?GHOST_ADMIN_ID is required}
+      - GHOST_ADMIN_SECRET=${GHOST_ADMIN_SECRET:?GHOST_ADMIN_SECRET is required}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:?WEBHOOK_SECRET is required}
+      - RESEND_API_KEY=${RESEND_API_KEY:?RESEND_API_KEY is required}
+      - FROM_EMAIL=${FROM_EMAIL:?FROM_EMAIL is required}
+      - PORT=3000
+      - RUST_LOG=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
 ```
 
 The service exposes the following endpoints:
