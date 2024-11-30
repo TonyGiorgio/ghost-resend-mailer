@@ -1,3 +1,4 @@
+use crate::ghost;
 use crate::ghost::{Member, Post};
 use serde::Serialize;
 
@@ -43,13 +44,17 @@ pub async fn format_email(
     post: &Post,
     member: &Member,
     config: &crate::config::Config,
+    settings: &ghost::Settings,
 ) -> anyhow::Result<String> {
     let template = EmailTemplate {
         site: SiteInfo {
-            url: config.ghost_url.clone(),
-            title: "Your Blog".to_string(),
-            description: "Your blog description".to_string(),
-            color: "#ff247c".to_string(),
+            url: settings.url.clone(),
+            title: settings.title.clone(),
+            description: settings.description.clone(),
+            color: settings
+                .accent_color
+                .clone()
+                .unwrap_or_else(|| "#3eb0ef".to_string()),
         },
         post: PostContent {
             id: post.id.clone(),
@@ -78,101 +83,210 @@ pub async fn format_email(
     let html = format!(
         r#"
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
             <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
             <style>
+                /* Reset styles */
+                body, div, p, h1, h2 {{
+                    margin: 0;
+                    padding: 0;
+                }}
+
+                /* Base styles */
                 body {{
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
                     line-height: 1.6;
                     color: #333;
+                    background: #ffffff;
+                    padding: 0;
+                    margin: 0;
+                }}
+
+                /* Container */
+                .container {{
                     max-width: 600px;
                     margin: 0 auto;
-                    padding: 20px;
+                    padding: 40px 20px;
                 }}
-                .header {{ text-align: center; margin-bottom: 30px; }}
-                .post-title {{ font-size: 24px; font-weight: bold; }}
-                .post-excerpt {{ font-style: italic; color: #666; }}
-                .post-content {{ margin: 20px 0; }}
-                .footer {{ text-align: center; font-size: 14px; color: #666; margin-top: 30px; }}
-                .button {{
-                    display: inline-block;
-                    padding: 10px 20px;
-                    background-color: {site_color};
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 5px;
+
+                /* Header */
+                .header {{
+                    text-align: center;
+                    padding-bottom: 30px;
+                    border-bottom: 1px solid #e5eff5;
+                    margin-bottom: 30px;
                 }}
-                .author-info {{ 
-                    display: flex; 
-                    align-items: center;
-                    margin: 20px 0;
+
+                .header h1 {{
+                    font-size: 28px;
+                    font-weight: 600;
+                    margin-bottom: 10px;
                 }}
-                .author-image {{
-                    width: 50px;
-                    height: 50px;
-                    border-radius: 25px;
-                    margin-right: 15px;
-                }}
-                .reading-time {{
-                    color: #666;
-                    font-size: 14px;
+
+                /* Post title */
+                .post-title {{
+                    font-size: 32px;
+                    line-height: 1.3;
+                    font-weight: 700;
                     margin-bottom: 20px;
                 }}
+
+                /* Feature image */
                 .feature-image {{
-                    max-width: 100%;
+                    width: 100%;
                     height: auto;
-                    margin: 20px 0;
+                    margin: 30px 0;
+                    border-radius: 5px;
                 }}
+
                 .feature-caption {{
                     font-size: 14px;
-                    color: #666;
+                    color: #738a94;
                     text-align: center;
+                    margin-top: 10px;
+                }}
+
+                /* Author info */
+                .author-info {{
+                    display: flex;
+                    align-items: center;
+                    margin: 30px 0;
+                }}
+
+                .author-image {{
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 100%;
+                    margin-right: 15px;
+                }}
+
+                .author-name {{
+                    font-weight: 600;
+                    font-size: 16px;
+                }}
+
+                .author-bio {{
+                    color: #738a94;
+                    font-size: 14px;
+                    margin-top: 5px;
+                }}
+
+                /* Content */
+                .content {{
+                    font-size: 16px;
+                    line-height: 1.7;
+                    margin: 0 auto;
+                }}
+
+                .content p {{
+                    margin-bottom: 1.5em;
+                }}
+
+                .content img {{
+                    max-width: 100%;
+                    height: auto;
+                    margin: 30px 0;
+                }}
+
+                /* Footer */
+                .footer {{
+                    margin-top: 50px;
+                    padding-top: 30px;
+                    border-top: 1px solid #e5eff5;
+                    text-align: center;
+                    font-size: 14px;
+                    color: #738a94;
+                }}
+
+                .footer a {{
+                    color: #3eb0ef;
+                    text-decoration: none;
+                }}
+
+                /* Reading time */
+                .reading-time {{
+                    font-size: 14px;
+                    color: #738a94;
+                    margin-bottom: 30px;
+                }}
+
+                /* Links */
+                a {{
+                    color: #3eb0ef;
+                    text-decoration: none;
+                }}
+
+                /* Responsive */
+                @media (max-width: 600px) {{
+                    .container {{
+                        padding: 20px 15px;
+                    }}
+
+                    .post-title {{
+                        font-size: 28px;
+                    }}
+                }}
+
+                /* Add these new styles after the header styles */
+                .view-online-link {{
+                    display: block;
+                    text-align: center;
+                    margin-bottom: 30px;
+                    color: #738a94;
+                    font-size: 13px;
+                    text-decoration: none;
+                }}
+
+                .view-online-link:hover {{
+                    color: #3eb0ef;
                 }}
             </style>
         </head>
         <body>
-            <div class="header">
-                <h1>{site_title}</h1>
-            </div>
-
-            <div class="post-title">
-                <h1>{post_title}</h1>
-                <div class="reading-time">
-                    {reading_time} min read
+            <div class="container">
+                <div class="header">
+                    <h1>{site_title}</h1>
                 </div>
-            </div>
 
-            {feature_image_html}
+                <a href="{post_url}" class="view-online-link">View this post in your browser →</a>
 
-            <div class="author-info">
-                {author_image_html}
-                <div>
-                    <strong>{author_name}</strong>
-                    {author_bio_html}
+                <article>
+                    <h1 class="post-title">{post_title}</h1>
+                    
+                    <div class="reading-time">
+                        {reading_time} min read
+                    </div>
+
+                    {feature_image_html}
+
+                    <div class="author-info">
+                        {author_image_html}
+                        <div>
+                            <div class="author-name">{author_name}</div>
+                            {author_bio_html}
+                        </div>
+                    </div>
+
+                    <div class="content">
+                        {post_content}
+                    </div>
+                </article>
+
+                <div class="footer">
+                    <p>You received this email because you signed up for updates from {site_title}.</p>
+                    <p>
+                        <a href="{subscription_link}">Manage subscription</a> • 
+                        <a href="{unsubscribe_link}">Unsubscribe</a>
+                    </p>
                 </div>
-            </div>
-
-            <div class="post-excerpt">
-                {post_excerpt}
-            </div>
-
-            <div class="post-content">
-                {post_content}
-            </div>
-
-            <div class="footer">
-                <p>
-                    <a href="{subscription_link}">Manage subscription</a> | 
-                    <a href="{unsubscribe_link}">Unsubscribe</a>
-                </p>
             </div>
         </body>
         </html>
     "#,
-        site_color = template.site.color,
         site_title = template.site.title,
+        post_url = template.post.url,
         post_title = template.post.title,
         reading_time = template.post.reading_time,
         feature_image_html = template
@@ -211,7 +325,6 @@ pub async fn format_email(
             .map_or(String::new(), |bio| {
                 format!(r#"<div class="author-bio">{}</div>"#, bio)
             }),
-        post_excerpt = template.post.excerpt,
         post_content = template.post.html,
         subscription_link = template.newsletter.subscription_link,
         unsubscribe_link = template.newsletter.unsubscribe_link

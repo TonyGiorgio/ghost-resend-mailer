@@ -1,3 +1,4 @@
+use crate::ghost;
 use crate::{
     config::Config,
     email::format_email,
@@ -175,13 +176,17 @@ pub async fn handle_webhook(
 
     tracing::debug!("Webhook signature verified successfully");
 
+    // Fetch settings once before processing emails
+    let settings = ghost::fetch_settings(&config).await.map_err(|e| {
+        tracing::error!("Failed to fetch Ghost settings: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
     // Fetch subscribers
-    tracing::info!("Fetching subscribers from Ghost");
     let subscribers = fetch_subscribers(&config).await.map_err(|e| {
         tracing::error!("Failed to fetch subscribers: {}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
-    tracing::info!("Found {} subscribers", subscribers.len());
 
     // Send emails using Resend in batches
     let resend_client = Resend::new(&config.resend_api_key);
@@ -199,7 +204,7 @@ pub async fn handle_webhook(
         for subscriber in subscriber_batch {
             tracing::debug!("Preparing email for subscriber: {}", subscriber.email);
 
-            let html_content = format_email(&payload.post.current, subscriber, &config)
+            let html_content = format_email(&payload.post.current, subscriber, &config, &settings)
                 .await
                 .map_err(|e| {
                     tracing::error!("Failed to format email: {}", e);

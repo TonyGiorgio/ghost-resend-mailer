@@ -193,3 +193,114 @@ pub async fn fetch_subscribers(config: &crate::config::Config) -> anyhow::Result
     tracing::debug!("Successfully fetched {} total members", all_members.len());
     Ok(all_members)
 }
+
+#[derive(Debug, Deserialize)]
+pub struct SettingsResponse {
+    pub settings: Vec<SettingEntry>,
+    #[allow(dead_code)]
+    pub meta: serde_json::Value,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SettingEntry {
+    pub key: String,
+    pub value: serde_json::Value, // Using Value because settings can be string, bool, or null
+}
+
+#[derive(Debug)]
+pub struct Settings {
+    pub title: String,
+    pub description: String,
+    pub accent_color: Option<String>,
+    pub url: String,
+}
+
+pub async fn fetch_settings(config: &crate::config::Config) -> anyhow::Result<Settings> {
+    let client = reqwest::Client::new();
+    let url = format!("{}/ghost/api/admin/settings/", config.ghost_url);
+
+    tracing::debug!("Fetching settings from: {}", url);
+
+    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+
+    let claims = Claims {
+        aud: "/admin/".to_string(),
+        exp: now + 300,
+        iat: now,
+    };
+
+    // Create header with the ID
+    let mut header = Header::new(jsonwebtoken::Algorithm::HS256);
+    header.kid = Some(config.ghost_admin_id.clone());
+    header.typ = Some("JWT".to_string());
+
+    let secret_bytes = hex::decode(&config.ghost_admin_secret)?;
+    let token = encode(&header, &claims, &EncodingKey::from_secret(&secret_bytes))?;
+
+    let response = client
+        .get(&url)
+        .header("Authorization", format!("Ghost {}", token))
+        .header("Accept-Version", "v5.0")
+        .send()
+        .await?;
+
+    let status = response.status();
+    tracing::debug!("Settings API response status: {}", status);
+
+    // Get the raw response body as text first
+    let body = response.text().await?;
+    tracing::debug!("Settings API raw response: {}", body);
+
+    if !status.is_success() {
+        return Err(anyhow::anyhow!("Ghost API error: {} - {}", status, body));
+    }
+
+    // Try to parse as Value first to see the structure
+    let v: serde_json::Value = serde_json::from_str(&body)?;
+    tracing::debug!("Settings API parsed response structure: {:#?}", v);
+
+    // Now try to parse into our struct
+    let settings_response: SettingsResponse = serde_json::from_str(&body).map_err(|e| {
+        tracing::error!("Failed to parse settings response: {}", e);
+        tracing::error!("Error details: {:#?}", e);
+        e
+    })?;
+
+    // Transform the array of settings into our Settings struct
+    let mut title = String::new();
+    let mut description = String::new();
+    let mut accent_color = None;
+
+    // Use the ghost_url from config as the url since that's what we're actually using
+    let url = config.ghost_url.clone();
+
+    for setting in settings_response.settings {
+        match setting.key.as_str() {
+            "title" => {
+                title = setting
+                    .value
+                    .as_str()
+                    .ok_or_else(|| anyhow::anyhow!("Title setting is not a string"))?
+                    .to_string();
+            }
+            "description" => {
+                description = setting
+                    .value
+                    .as_str()
+                    .ok_or_else(|| anyhow::anyhow!("Description setting is not a string"))?
+                    .to_string();
+            }
+            "accent_color" => {
+                accent_color = setting.value.as_str().map(|s| s.to_string());
+            }
+            _ => {} // Ignore other settings
+        }
+    }
+
+    Ok(Settings {
+        title,
+        description,
+        accent_color,
+        url,
+    })
+}
