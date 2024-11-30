@@ -20,8 +20,9 @@ impl Config {
                 .map_err(|_| anyhow::anyhow!("GHOST_URL environment variable not found"))?,
             ghost_admin_id: std::env::var("GHOST_ADMIN_ID")
                 .map_err(|_| anyhow::anyhow!("GHOST_ADMIN_ID environment variable not found"))?,
-            ghost_admin_secret: std::env::var("GHOST_ADMIN_SECRET")
-                .map_err(|_| anyhow::anyhow!("GHOST_ADMIN_SECRET environment variable not found"))?,
+            ghost_admin_secret: std::env::var("GHOST_ADMIN_SECRET").map_err(|_| {
+                anyhow::anyhow!("GHOST_ADMIN_SECRET environment variable not found")
+            })?,
             webhook_secret: std::env::var("WEBHOOK_SECRET")
                 .map_err(|_| anyhow::anyhow!("WEBHOOK_SECRET environment variable not found"))?,
             resend_api_key: std::env::var("RESEND_API_KEY")
@@ -35,4 +36,3 @@ impl Config {
         })
     }
 }
-
