@@ -1,5 +1,5 @@
 {
-  description = "Rust project";
+  description = "Ghost Resend Mailer Nix";
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";

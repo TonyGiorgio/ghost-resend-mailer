@@ -1,4 +1,4 @@
-# Ghost Mailer
+# Ghost Resend Mailer
 
 A service that listens for new Ghost blog posts and emails them to your subscribers using Resend.
 

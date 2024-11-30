@@ -1,5 +1,5 @@
 [package]
-name = "ghost-mailer"
+name = "ghost-resend-mailer"
 version = "0.1.0"
 edition = "2021"
 
