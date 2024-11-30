@@ -57,8 +57,10 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             artifact_name: ghost-resend-mailer-x86_64-linux
+            openssl_package: libssl-dev
           - target: aarch64-unknown-linux-gnu
             artifact_name: ghost-resend-mailer-aarch64-linux
+            openssl_package: libssl-dev:arm64
     
     steps:
       - uses: actions/checkout@v4
@@ -69,13 +71,14 @@ jobs:
           toolchain: 1.78.0
           targets: ${{ matrix.target }}
       
-      - name: Install cross-compilation dependencies
+      - name: Set up cross-compilation environment
         run: |
+          sudo dpkg --add-architecture arm64
           sudo apt-get update
-          sudo apt-get install -y pkg-config libssl-dev
-          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
-            sudo apt-get install -y gcc-aarch64-linux-gnu
-          fi
+          sudo apt-get install -y \
+            pkg-config \
+            ${{ matrix.openssl_package }} \
+            gcc-aarch64-linux-gnu
       
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
@@ -85,11 +88,26 @@ jobs:
             ~/.cargo/registry/cache
             ~/.cargo/git
             target
+
+      # Create Cross.toml for OpenSSL configuration
+      - name: Configure Cross.toml
+        run: |
+          cat > Cross.toml << 'EOF'
+          [target.x86_64-unknown-linux-gnu]
+          image = "ghcr.io/cross-rs/x86_64-unknown-linux-gnu:main"
+
+          [target.aarch64-unknown-linux-gnu]
+          image = "ghcr.io/cross-rs/aarch64-unknown-linux-gnu:main"
+          EOF
       
       - name: Install cross
         run: cargo install cross --git https://github.com/cross-rs/cross
       
       - name: Build release
+        env:
+          OPENSSL_DIR: /usr/lib/ssl
+          PKG_CONFIG_PATH: /usr/lib/pkgconfig
+          PKG_CONFIG_ALLOW_CROSS: 1
         run: cross build --release --target ${{ matrix.target }}
       
       - name: Upload artifacts
