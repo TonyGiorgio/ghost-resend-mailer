@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  mailer:
+    build: .
+    network_mode: "host"
+    ports:
+      - "3000:3000"
+    environment:
+      - GHOST_URL=${GHOST_URL:?GHOST_URL is required}
+      - GHOST_ADMIN_ID=${GHOST_ADMIN_ID:?GHOST_ADMIN_ID is required}
+      - GHOST_ADMIN_SECRET=${GHOST_ADMIN_SECRET:?GHOST_ADMIN_SECRET is required}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:?WEBHOOK_SECRET is required}
+      - RESEND_API_KEY=${RESEND_API_KEY:?RESEND_API_KEY is required}
+      - FROM_EMAIL=${FROM_EMAIL:?FROM_EMAIL is required}
+      - PORT=3000
+      - RUST_LOG=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s 

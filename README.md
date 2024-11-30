@@ -4,7 +4,7 @@ A service that listens for new Ghost blog posts and emails them to your subscrib
 
 ## Setup
 
-1. Create a `.env` file with the following variables:
+1. You'll need the following environment variables:
     ```env
     GHOST_URL=http://your-ghost-blog.com
     GHOST_ADMIN_ID=first_part_of_ghost_key
@@ -12,7 +12,6 @@ A service that listens for new Ghost blog posts and emails them to your subscrib
     WEBHOOK_SECRET=your_webhook_secret
     RESEND_API_KEY=your_resend_api_key
     FROM_EMAIL=your-blog@yourdomain.com
-    PORT=3000
     ```
 
 2. Get your Ghost Admin API key:
@@ -30,16 +29,53 @@ A service that listens for new Ghost blog posts and emails them to your subscrib
    - Set the following:
      - Event: `Post published`
      - Target URL: `http://your-server:3000/webhook`
-     - Secret: Generate a random string openssl
-     - Copy this same secret to your `.env` file's `WEBHOOK_SECRET`
+     - Secret: Generate a random string using openssl
+     - Save this secret, you'll need it for the WEBHOOK_SECRET environment variable
 
 4. Get your Resend API key:
    - Sign up at [resend.com](https://resend.com)
    - Go to the API Keys section
    - Create a new API key
-   - Copy it to your `.env` file's `RESEND_API_KEY`
 
-5. Run the service:
-    ```bash
-    cargo run
-    ```
+## Development
+
+Run the service locally:
+```bash
+cargo run
+```
+
+## Deployment
+
+### Using Docker Compose
+
+```bash
+docker compose up -d \
+  -e GHOST_URL=http://your-ghost-blog.com \
+  -e GHOST_ADMIN_ID=your_admin_id \
+  -e GHOST_ADMIN_SECRET=your_admin_secret \
+  -e WEBHOOK_SECRET=your_webhook_secret \
+  -e RESEND_API_KEY=your_resend_api_key \
+  -e FROM_EMAIL=your-blog@yourdomain.com
+```
+
+### Using Docker Directly
+
+```bash
+docker build -t ghost-resend-mailer .
+
+docker run -d \
+  -p 3000:3000 \
+  -e GHOST_URL=http://your-ghost-blog.com \
+  -e GHOST_ADMIN_ID=your_admin_id \
+  -e GHOST_ADMIN_SECRET=your_admin_secret \
+  -e WEBHOOK_SECRET=your_webhook_secret \
+  -e RESEND_API_KEY=your_resend_api_key \
+  -e FROM_EMAIL=your-blog@yourdomain.com \
+  ghost-resend-mailer
+```
+
+The service exposes the following endpoints:
+- `/webhook` - Webhook endpoint for Ghost
+- `/health` - Health check endpoint
+
+The service includes graceful shutdown handling for proper container orchestration.
