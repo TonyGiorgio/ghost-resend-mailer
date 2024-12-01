@@ -55,7 +55,7 @@ You can pull the pre-built container from GitHub Container Registry:
 docker pull ghcr.io/tonygiorgio/ghost-resend-mailer:latest
 
 # Or pull a specific version
-docker pull ghcr.io/tonygiorgio/ghost-resend-mailer:v0.1.0
+docker pull ghcr.io/tonygiorgio/ghost-resend-mailer:0.1.0
 ```
 
 The container is built for x86_64 (AMD64) architecture. Docker will automatically pull the correct version for your system.
