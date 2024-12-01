@@ -48,7 +48,7 @@ cargo run
 
 ### Using Docker
 
-You can pull the pre-built container from GitHub Container Registry:
+You can pull the pre-built container from GitHub Container Registry: https://github.com/tonygiorgio/ghost-resend-mailer/pkgs/container/ghost-resend-mailer
 
 ```bash
 # Pull the latest version
