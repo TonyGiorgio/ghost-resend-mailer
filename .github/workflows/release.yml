@@ -84,9 +84,10 @@ jobs:
       - name: Get Docker Image Info
         id: image-info
         run: |
-          # Convert to lowercase for Docker compatibility
+          # Convert to lowercase for Docker compatibility and remove 'v' prefix from tag
           REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          echo "image=${{ env.REGISTRY }}/${REPO_LOWER}:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          TAG_NO_V=$(echo "${{ github.event.release.tag_name }}" | sed 's/^v//')
+          echo "image=${{ env.REGISTRY }}/${REPO_LOWER}:${TAG_NO_V}" >> $GITHUB_OUTPUT
       
       - name: Update Release Notes
         uses: softprops/action-gh-release@v1
