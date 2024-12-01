@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository | lower }}
+  IMAGE_NAME: ${{ github.repository }}
 
 permissions:
   contents: write
@@ -33,11 +33,14 @@ jobs:
       - name: Build release
         run: cargo build --release
       
+      - name: Rename binary for architecture
+        run: |
+          mv target/release/ghost-resend-mailer target/release/ghost-resend-mailer-x86_64-linux
+      
       - name: Upload artifacts to release
         uses: softprops/action-gh-release@v1
         with:
-          files: target/release/ghost-resend-mailer
-          asset_name: ghost-resend-mailer-x86_64-linux
+          files: target/release/ghost-resend-mailer-x86_64-linux
 
   build-and-push-image:
     name: Push Docker image
@@ -64,7 +67,6 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -82,7 +84,9 @@ jobs:
       - name: Get Docker Image Info
         id: image-info
         run: |
-          echo "image=${{ env.REGISTRY }}/${{ github.repository | lower }}:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          # Convert to lowercase for Docker compatibility
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "image=${{ env.REGISTRY }}/${REPO_LOWER}:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
       
       - name: Update Release Notes
         uses: softprops/action-gh-release@v1
